@@ -1,0 +1,8 @@
+{% extends "base_bsm.html" %}
+{% block content %}
+<form action="{% url "raw_data_form" %}" method="post">
+    {% csrf_token %}
+    {{ form.as_ul }}
+    <input type="submit" value="Submit" />
+</form>
+{% endblock %}

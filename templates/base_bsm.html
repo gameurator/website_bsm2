@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+   <link rel="stylesheet" href="/media/css/style.css" />
+   <title>{% block title %}Données Bourg Saint Maurice{% endblock %}</title>
+</head>
+<body>
+<header>Bourg Saint Maurice</header>
+    {% load static %}
+{#    <img src="{% static 'img/BYES.png' %}" alt="BYES" />#}
+    <nav>
+       {% block nav %}
+       <ul>
+            <li><a href="/">Accueil</a></li>
+            <li><a href="/global_report/">Blog</a></li>
+
+       </ul>
+       {% endblock %}
+   </nav>
+   <section id="content">
+       {% block content %}{% endblock %}
+   </section>
+<footer>&copy; Arnaud de Coudenhove</footer>
+</body>
+</html>

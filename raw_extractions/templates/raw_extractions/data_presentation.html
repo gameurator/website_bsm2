@@ -1,0 +1,16 @@
+{% extends "base_bsm.html" %}
+{% block content %}
+    <h2>Données Brutes</h2>
+    <table>
+        {% for k in raw_data_json %}
+            <tr>
+            {% for item_1, item_2 in k.items %}
+                    <td>{{ item_2 }}</td>
+            {% endfor %}
+            </tr>
+        {% empty %}
+            {{ raw_data_status_code }}
+            {{ raw_data_headers }}
+        {% endfor %}
+    </table>
+{% endblock %}

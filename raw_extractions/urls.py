@@ -18,6 +18,7 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
+    # path('admin/', admin.site.urls),
     path('', views.raw_data_form, name="raw_data_form"),
     path('result/<int:deviceId>-<str:name>-<str:start_date>-<str:end_date>', views.raw_data_present, name='raw_date_present'),
     # path('admin/', admin.site.urls),

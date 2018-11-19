@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Device
+from .models import Device, ControllerType
 
 
 # Register your models here.
@@ -12,4 +12,5 @@ class DeviceAdmin(admin.ModelAdmin):
     search_fields = ('name', 'energy_names')
 
 
+admin.site.register(ControllerType)
 admin.site.register(Device)

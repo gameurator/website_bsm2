@@ -17,8 +17,11 @@ from typing import Union, Tuple
 
 import requests
 from webob.multidict import MultiDict
+from datetime import datetime
+from sys import path
+from re import sub
 
-from .file_writing import write_request
+from .file_writing import write_request, read_json_file, write_to_json_file
 
 SLV_URL = "http://citybox2.axione.fr/reports/"  # URL of SLV server
 logi = ('jsaintchely', 'SudEstExpl14')  # the login necessary to get to the website   'jsaintchely', 'SudEstExpl14'
@@ -237,95 +240,117 @@ def add_to_parameters(key: object, values: Union[list, object], multidictio: Mul
             multidictio.add(key, values)  # add only one deviceId to param
     return multidictio
 
-# def getAllControlers_request_to_data(r: requests.request) -> Tuple[list, list, list]:
-#     """
-#     Transform the input request, from getAllControllers function of SLV API to lists of interesting data for main script
-#     :param r: request from getAllControllers request.
-#     :return: a tuple of the lists of all controllers, all controllers ID and all geozones id.
-#     :rtype: tuple
-#     """
-#     output_json = r.json()  # get the data out of the request
-#     AllControllers = []  # initialize list of all controllers name
-#     ControllersID = []  # initialize list of all controllers ID
-#     GeoZoneId = []  # initialize list of all geo zones ID
-#     for elt in output_json:  # for each element in the data, add the appropriate element at the end of each list
-#         AllControllers.append(elt['controllerDevice']['controllerStrId'])
-#         ControllersID.append(elt['controllerDevice']['id'])
-#         GeoZoneId.append(elt['controllerDevice']['geoZoneId'])
-#     return AllControllers, ControllersID, GeoZoneId
+
+def getAllControlers_request_to_data(r: requests.request) -> Tuple[list, list, list]:
+    """
+    Transform the input request, from getAllControllers function of SLV API to lists of interesting data for main script
+    :param r: request from getAllControllers request.
+    :return: a tuple of the lists of all controllers, all controllers ID and all geozones id.
+    :rtype: tuple
+    """
+    output_json = r.json()  # get the data out of the request
+    AllControllers = []  # initialize list of all controllers name
+    ControllersID = []  # initialize list of all controllers ID
+    GeoZoneId = []  # initialize list of all geo zones ID
+    for elt in output_json:  # for each element in the data, add the appropriate element at the end of each list
+        AllControllers.append(elt['controllerDevice']['controllerStrId'])
+        ControllersID.append(elt['controllerDevice']['id'])
+        GeoZoneId.append(elt['controllerDevice']['geoZoneId'])
+    return AllControllers, ControllersID, GeoZoneId
 
 
-# def getControllerDevices_request_to_data(r: requests.request) -> Tuple[list, list]:
-#     """
-#     From the controllers list to read, with SLV url and authentication, return a list of electric meters and their IDs
-#     in a tuple of the 2 lists.
-#     :param r: request from getControllerDevices
-#     :return: returns a tuple of two list containing the ElectricCounter names and their respective IDs.
-#     """
-#     output_json = r.json()  # get the json out of the request
-#     for controller in output_json:
-#         if controller['categoryStrId'] == 'electricalCounter':  # all_counters_category =
-#             electric_counter_ID = controller['id']  # find the electriccounter id
-#             electric_counter_str = controller['controllerStrId']  # find the electriccounter strId
-#     return electric_counter_str, electric_counter_ID  # , all_counters_category
+def getControllerDevices_request_to_data(r: requests.request) -> Tuple[list, list]:
+    """
+    From the controllers list to read, with SLV url and authentication, return a list of electric meters and their IDs
+    in a tuple of the 2 lists.
+    :param r: request from getControllerDevices
+    :return: returns a tuple of two list containing the ElectricCounter names and their respective IDs.
+    """
+    output_json = r.json()  # get the json out of the request
+    for controller in output_json:
+        if controller['categoryStrId'] == 'electricalCounter':  # all_counters_category =
+            electric_counter_ID = controller['id']  # find the electriccounter id
+            electric_counter_str = controller['controllerStrId']  # find the electriccounter strId
+    return electric_counter_str, electric_counter_ID  # , all_counters_category
 
-# # def get_index_and_onoff_values():
-#     """
-#     script which write requests return values (DigitalOutput1 and TotalKWHPositive) to json format
-#     """
-#
-#     global error_stream  # initilize a string so that all errors will be written on that stream
-#     error_stream = ""
-#
-#     (start_date, end_date, historization) = get_info_from_user()
-#
-#     request_all_controllers, file_name_control = call_SLV_getAllControllers(SLV_URL, logi, 'json',
-#                                                                             True)
-#     AllControllers, ControllersID, GeoZoneId = getAllControlers_request_to_data(
-#         request_all_controllers)  # recover interesting data from previous request
-#     ElectricCounters = []  # initialize list to save all ElectricCounters
-#     ElectricCounterIDs = []  # initialize list to save all electric counters id
-#     for controller in AllControllers:  # for each controllers
-#         # demand to SLV Server the list of devices which parent is controller
-#         request_controller_devices, file_name_devices = call_SLV_getControllerDevices(SLV_URL, logi, 'json', controller,
-#                                                                                       True)
-#         try:
-#             electric_counter_str, electric_counter_ID = getControllerDevices_request_to_data(
-#                 request_controller_devices)  # isolate the electric counters
-#             ElectricCounters.append(electric_counter_str)  # add to the saving list
-#             ElectricCounterIDs.append(electric_counter_ID)  # add to the saving list
-#         except UnboundLocalError as error_caught:  # if no electric counters were found, write the error
-#             error_stream += "No electric devices could be found for {}. {}\n".format(controller, error_caught)
-#     # demand all KWH log values between given dates
-#     request_log_values, file_name_log_KWH = call_SLV_getDevicesLogValues(SLV_URL, logi, 'json', ElectricCounterIDs,
-#                                                                          'TotalKWHPositive',
-#                                                                          start_date.strftime("%d/%m/%Y %H:%M:%S"),
-#                                                                          end_date.strftime("%d/%m/%Y %H:%M:%S"),
-#                                                                          True)
-#     if historization:
-#         try:
-#             historize_log_values(file_name_log_KWH)
-#         except ValueError as error_caught:
-#             error_stream += "Make sure that the code parameters are on json. Historize does not work on xml format.{}".format(
-#                 error_caught)
-#     # demand all on/off log values between given dates
-#     request_onoff_values, file_name_log_Op1 = call_SLV_getDevicesLogValues(SLV_URL, logi, 'json', ControllersID,
-#                                                                            'DigitalOutput1',
-#                                                                            start_date.strftime("%d/%m/%Y %H:%M:%S"),
-#                                                                            end_date.strftime("%d/%m/%Y %H:%M:%S"),
-#                                                                            True)
-#     if historization:
-#         try:
-#             historize_log_values(file_name_log_Op1)
-#         except ValueError as error_caught:
-#             error_stream += "Make sure that the code parameters are on json. Historize does not work on xml format.{}".format(
-#                 error_caught)
-#
-#     error_file = open('errors//APIFinal_errors.txt', 'w')  # open in read mode the file were to write all errors
-#     error_file.write(error_stream)  # write the errors
-#     error_file.close()  # close the file
-#
-#
-# get_index_and_onoff_values()  # calls the script main function
-# # call_SLV_getDeviceValueDescriptors(SLV_URL, logi, 'xml', 'CBC_BSM_A03', 'Mesure_BSM_A03', True)
-# # call_SLV_getGeozoneChildrenGeozones(SLV_URL, logi, 'json', 3462, False, True)
+
+def historize_log_values(path_for_data: str, file_name_log_values: str):
+    """
+    hitorize all data for the given log value name on the given file which will end by history instead of its dates
+    :param file_name_log_values: read the request file
+    """
+    values = read_json_file(path_for_data, sub(r'[\\/:"*?<>|]+', "", file_name_log_values))
+    if path.isfile(path_for_data + sub(r'[\\/:"*?<>|]+', "", file_name_log_values)[:-32] + "_history.json"):
+        historic = read_json_file(path_for_data, sub(r'[\\/:"*?<>|]+', "", file_name_log_values)[:-32] + "_history")
+        historic += values
+        unique = []
+        [unique.append(elem) for elem in historic if elem not in unique]
+        unique.sort(key=lambda event: datetime.strptime(event["eventTime"], "%Y-%m-%d %H:%M:%S"))
+        write_to_json_file(path_for_data, sub(r'[\\/:"*?<>|]+', "", file_name_log_values)[:-32] + "_history", unique)
+    else:
+        write_to_json_file(path_for_data, sub(r'[\\/:"*?<>|]+', "", file_name_log_values)[:-32] + "_history", values)
+
+
+if __name__ == '__main__':
+    pass
+
+def get_index_and_onoff_values():
+    """
+    script which write requests return values (DigitalOutput1 and TotalKWHPositive) to json format
+    """
+
+    global error_stream  # initilize a string so that all errors will be written on that stream
+    error_stream = ""
+
+    (start_date, end_date, historization) = get_info_from_user()
+
+    request_all_controllers, file_name_control = call_SLV_getAllControllers(SLV_URL, logi, 'json',
+                                                                            True)
+    AllControllers, ControllersID, GeoZoneId = getAllControlers_request_to_data(
+        request_all_controllers)  # recover interesting data from previous request
+    ElectricCounters = []  # initialize list to save all ElectricCounters
+    ElectricCounterIDs = []  # initialize list to save all electric counters id
+    for controller in AllControllers:  # for each controllers
+        # demand to SLV Server the list of devices which parent is controller
+        request_controller_devices, file_name_devices = call_SLV_getControllerDevices(SLV_URL, logi, 'json', controller,
+                                                                                      True)
+        try:
+            electric_counter_str, electric_counter_ID = getControllerDevices_request_to_data(
+                request_controller_devices)  # isolate the electric counters
+            ElectricCounters.append(electric_counter_str)  # add to the saving list
+            ElectricCounterIDs.append(electric_counter_ID)  # add to the saving list
+        except UnboundLocalError as error_caught:  # if no electric counters were found, write the error
+            error_stream += "No electric devices could be found for {}. {}\n".format(controller, error_caught)
+    # demand all KWH log values between given dates
+    request_log_values, file_name_log_KWH = call_SLV_getDevicesLogValues(SLV_URL, logi, 'json', ElectricCounterIDs,
+                                                                         'TotalKWHPositive',
+                                                                         start_date.strftime("%d/%m/%Y %H:%M:%S"),
+                                                                         end_date.strftime("%d/%m/%Y %H:%M:%S"),
+                                                                         True)
+    if historization:
+        try:
+            historize_log_values(file_name_log_KWH)
+        except ValueError as error_caught:
+            error_stream += "Make sure that the code parameters are on json. Historize does not work on xml format.{}".format(
+                error_caught)
+    # demand all on/off log values between given dates
+    request_onoff_values, file_name_log_Op1 = call_SLV_getDevicesLogValues(SLV_URL, logi, 'json', ControllersID,
+                                                                           'DigitalOutput1',
+                                                                           start_date.strftime("%d/%m/%Y %H:%M:%S"),
+                                                                           end_date.strftime("%d/%m/%Y %H:%M:%S"),
+                                                                           True)
+    if historization:
+        try:
+            historize_log_values(file_name_log_Op1)
+        except ValueError as error_caught:
+            error_stream += "Make sure that the code parameters are on json. Historize does not work on xml format.{}".format(
+                error_caught)
+
+    error_file = open('errors//APIFinal_errors.txt', 'w')  # open in read mode the file were to write all errors
+    error_file.write(error_stream)  # write the errors
+    error_file.close()  # close the file
+
+
+get_index_and_onoff_values()  # calls the script main function
+# call_SLV_getDeviceValueDescriptors(SLV_URL, logi, 'xml', 'CBC_BSM_A03', 'Mesure_BSM_A03', True)
+# call_SLV_getGeozoneChildrenGeozones(SLV_URL, logi, 'json', 3462, False, True)

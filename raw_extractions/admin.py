@@ -12,7 +12,7 @@ class DeviceAdmin(admin.ModelAdmin):
 
 
 class SubDeviceAdmin(admin.ModelAdmin):
-    list_display = ('device_name', 'category')
+    list_display = ('device_id', 'category')
     list_filter = ('device_name', 'category')
     ordering = ('category', 'device_name')
     search_fields = ('device_name', 'category')

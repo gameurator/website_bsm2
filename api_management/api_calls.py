@@ -19,9 +19,9 @@ import requests
 from webob.multidict import MultiDict
 from datetime import datetime
 from os import path
-from re import sub
-from sys import argv
-from raw_extractions.models import SubDevice
+# from re import sub
+# from sys import argv
+# from raw_extractions.models import SubDevice
 
 from .file_writing import write_request, read_json_file, write_to_json_file
 
